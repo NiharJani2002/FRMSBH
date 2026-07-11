@@ -290,11 +290,12 @@ If this repository is useful in your own work, please cite it alongside the pape
 ```bibtex
 @misc{jani2026resettableextensions,
   author = {Jani, Nihar Mahesh},
+  email = {niharmaheshjani@gmail.com}
   title  = {Resettable Streaming Extensions: Six Adaptively Robust
             Sketches for Synchronized Distributed Messaging},
   year   = {2026},
   note   = {Independent research artifact, single-file C++ implementation},
-  url    = {https://github.com/NiharJani2002}
+  url    = {https://github.com/NiharJani2002/FRMSBH}
 }
 
 @misc{cohen2026resettable,
