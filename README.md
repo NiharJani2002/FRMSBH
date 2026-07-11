@@ -291,8 +291,7 @@ If this repository is useful in your own work, please cite it alongside the pape
 @misc{jani2026resettableextensions,
   author = {Jani, Nihar Mahesh},
   email = {niharmaheshjani@gmail.com}
-  title  = {Resettable Streaming Extensions: Six Adaptively Robust
-            Sketches for Synchronized Distributed Messaging},
+  title  = {FRSMBH: six robustness extensions to adaptively-robust resettable streaming cardinality estimation (federated sharding, ReLU renewal, zCDP release, range-oblivious sketching, betting-gated detection,                 crash-safe logical clocks)},
   year   = {2026},
   note   = {Independent research artifact, single-file C++ implementation},
   url    = {https://github.com/NiharJani2002/FRMSBH}
