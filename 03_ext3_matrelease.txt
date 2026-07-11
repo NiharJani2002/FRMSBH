@@ -1,0 +1,26 @@
+EXTENSION #3 -- MatRelease: zCDP-Calibrated Continual Release for Tighter Bounds
+------------------------------------------------------------------------------
+
+Real data: the SAME real ticker-join cardinality signal used in Extension #1 (this
+time on a single node), released two ways from the identical underlying Fenwick
+hierarchy: pure epsilon-DP with Laplace noise (calibratePureDP, matching the paper's
+own tree-mechanism scaling) vs rho-zCDP with Gaussian noise (calibrateZCDP), at the
+standard equal-strength correspondence rho ~= eps^2/2. Both columns share the SAME
+sample draws per seed (only the noise mechanism differs), and everything is now
+averaged over 40 independent seeds (Agarwal et al., NeurIPS 2021) rather than read
+off one run.
+
+  eps (pure-DP) = 2, matched rho (zCDP) = 2
+  per-level sigma, Laplace/pure-DP = 9.00843
+  per-level sigma, Gaussian/zCDP   = 3.0014
+  true final cardinality           = 505
+  mean |error| over ~30 checkpoints, Laplace/pure-DP = 29.4211  [95% CI 26.6700, 33.1017]  (n=40 seeds)
+  mean |error| over ~30 checkpoints, Gaussian/zCDP   = 15.0688  [95% CI 13.4264, 16.7780]  (n=40 seeds)
+  improvement factor (ratio of means)                = 1.952
+
+Paper comparison: Theorem 2.4's O(eps^-2 * log^1.5(T) * log(T/delta)) bound uses
+exactly the pure-DP Laplace calibration measured in the first row above; the paper's
+own conclusion flags zCDP/approximate-DP as an untaken direction for tightening it.
+This experiment is a direct, from-scratch measurement of that direction on a real
+cardinality signal, using the same Fenwick backbone for both columns so the ONLY
+variable is the noise mechanism.

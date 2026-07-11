@@ -1,0 +1,29 @@
+SUMMARY -- Six Extensions to Adaptively Robust Resettable Streaming
+------------------------------------------------------------------------------
+
+Dataset: 619040 real daily bars, 505 S&P500 tickers, 1259 trading days (2013-2018),
+downloaded from https://raw.githubusercontent.com/plotly/datasets/master/all_stocks_5yr.csv
+
+Files in this directory:
+  00_baseline_vulnerability.txt  - the classical sketch's known failure mode
+  01_ext1_fedtree.txt            - federated/sharded robust cardinality
+  02_ext2_relu_renew.txt         - signed-delta (ReLU) model, renewal thresholds
+  03_ext3_matrelease.txt         - zCDP/Gaussian vs pure-DP/Laplace release
+  04_ext4_scalefree_bernstein.txt- range-oblivious heavy-tailed Bernstein stats
+  05_ext5_betsketch.txt          - betting-gated pay-as-you-go robustness
+  06_ext6_hlc_tree.txt           - out-of-order + crash-safe continual release
+
+Each file states, in its own header, exactly which limitation of
+'Adaptively Robust Resettable Streaming' (Cohen, Gribelyuk, Nelson, Stemmer,
+preprint, Jan 2026) it targets. Each extension's ORIGINAL design was motivated by
+6 post-2020 peer-reviewed papers apiece (36 total, all cited in that extension's own
+class-level comment) -- that count is accurate as a description of the initial
+design pass, not as a claim about every citation added since. Three rounds of
+actually running this code turned up real bugs -- a use-before-declaration compile
+error, a mismatched noise-composition mechanism, a metric conflating cold-start with
+steady-state error, and a paired experiment analyzed as if it were unpaired -- and
+fixing them honestly required MORE than the original 6 per extension for #4, #5, and
+#6 specifically. Several of those additional citations are very recent (2025-2026)
+preprints rather than established peer-reviewed venues; each such case is flagged as
+a preprint at its point of use in that extension's own file and in the source code's
+comments, not folded silently into a blanket 'peer-reviewed' claim here.

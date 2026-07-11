@@ -1,0 +1,56 @@
+EXTENSION #2 -- ReLU-Renew: Bias-Bounded Tracking for the Signed-Delta ReLU Model
+------------------------------------------------------------------------------
+
+Real data, Part A: a genuine market-breadth style signal -- for every ticker, every
+trading day, +1 if today's volume rose vs yesterday, -1 if it fell (a real 'advance/
+decline' style construction, tracked per-ticker and accumulated through a ReLU clamp,
+the same v <- max(0, v+delta) rule that governs a message-queue depth counter).
+
+  relative error (12 seeds) = 0.04944  [95% CI 0.03349, 0.06699]  (n=12 seeds)
+
+Real data, Part B -- belief-decay under renewal (isolates the NEW ingredient):
+A believer is handed a PERFECT initial read (best case for an attacker) on whether
+one real ticker's oscillating ReLU value sits above its current sampling threshold,
+then keeps re-using that stale belief while the oscillation continues.
+
+CORRECTED THEORY (the previous version of this file said accuracy should decay
+'toward chance,' meaning 0.5 -- that is wrong, and here is the fix). Once enough
+renewals have happened, the CURRENT threshold is fresh and independent of the stale
+belief, so accuracy converges not to 0.5 but to the STATIONARY probability that a
+fresh Exp(1/tau) threshold agrees with that specific belief: for peak value v=51,
+tau=50, that is mu_1 = 1-e^(-51/50) = 0.6394 if the belief was 'sampled', or mu_0 = 1-mu_1 = 0.3606 if the belief was 'not sampled'. This is exactly the
+kind of Markov-chain convergence-to-stationary-distribution argument used to show DP
+mechanisms under repeated refreshment stabilize exponentially fast (Chourasia, Ye,
+Shokri, 'Differential Privacy Dynamics of Langevin Diffusion and Noisy Gradient
+Descent,' NeurIPS 2021) -- same phenomenon, one discrete renewal step at a time
+instead of one continuous diffusion step.
+
+To test this cleanly, each of the two possible initial beliefs is forced explicitly
+(rejection sampling over seeds until phase A lands on the target belief) and reported
+SEPARATELY over 40 seeds each, tracking 'edge' = accuracy(t) minus the
+belief's own theoretical stationary target. Edge should stay flat at q=0 (no decay
+possible -- the threshold never changes) and decay toward 0 for q>0, regardless of
+which belief was forced.
+
+-- forced initial belief: SAMPLED (target mu=0.6394) --
+q(renewal)  edge@200              edge@1000             edge@2000             edge@4000
+0.0000      0.361 [0.361,0.361]   0.361 [0.361,0.361]   0.361 [0.361,0.361]   0.361 [0.361,0.361]   
+0.0050      0.156 [0.082,0.227]   0.063 [0.009,0.112]   0.056 [0.011,0.100]   0.023 [-0.003,0.048]  
+0.0200      0.042 [-0.030,0.106]  0.022 [-0.009,0.052]  0.024 [-0.002,0.047]  0.004 [-0.012,0.019]  
+0.1000      0.010 [-0.027,0.049]  0.003 [-0.011,0.016]  -0.001 [-0.010,0.008] 0.000 [-0.007,0.008]  
+
+-- forced initial belief: NOT SAMPLED (target mu=0.3606) --
+q(renewal)  edge@200              edge@1000             edge@2000             edge@4000
+0.0000      0.639 [0.639,0.639]   0.639 [0.639,0.639]   0.639 [0.639,0.639]   0.639 [0.639,0.639]   
+0.0050      0.233 [0.142,0.325]   0.049 [-0.011,0.108]  0.004 [-0.037,0.047]  0.001 [-0.033,0.032]  
+0.0200      0.091 [0.021,0.157]   0.023 [-0.009,0.053]  0.023 [-0.002,0.048]  0.016 [0.001,0.032]   
+0.1000      0.038 [0.004,0.070]   0.021 [0.008,0.034]   0.012 [0.003,0.021]   0.010 [0.004,0.016]   
+
+q=0 should hold edge flat (no possible decay -- the threshold never changes) at
+whatever its starting value is; q>0 should visibly pull edge toward 0 as rounds
+accumulate, in BOTH strata, confirming convergence to the belief's own stationary
+target rather than to an arbitrary 0.5.
+
+Paper comparison: this is the paper's own Section 5 open problem #2 (general ReLU
+model, 'partial decrements may cause slight posterior biases to persist and
+accumulate') -- left open there; ReLU-Renew is a first, explicitly partial, answer.

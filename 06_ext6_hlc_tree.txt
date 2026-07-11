@@ -1,0 +1,72 @@
+EXTENSION #6 -- HLC-Tree: Logical-Clock-Indexed Robust Release Under Reordering
+and Crash Recovery
+------------------------------------------------------------------------------
+
+Real data: the true chronological order of the real feed IS the logical-time ground
+truth; a bounded random jitter (mimicking cross-node network delay) permutes the
+ARRIVAL order the sketch actually receives events in, by up to +/-W real rows.
+
+Run over 40 independent seeds per row (Agarwal et al., NeurIPS 2021) rather
+than the single fixed-seed draw used previously:
+
+disorder(W)   watermark     meanAbsErr (mean [95% CI])
+0             0             20.4389  [95% CI 19.9043, 21.0112]  (n=40 seeds)
+50            50            20.4671  [95% CI 19.9344, 21.0271]  (n=40 seeds)
+50            300           20.3829  [95% CI 19.8342, 20.9584]  (n=40 seeds)
+200           5             22.1510  [95% CI 21.6424, 22.6940]  (n=40 seeds)
+500           5             26.0918  [95% CI 25.4624, 26.6869]  (n=40 seeds)
+500           600           21.6778  [95% CI 21.0517, 22.3503]  (n=40 seeds)
+
+Watch: error stays close to the disorder=0 baseline while watermark >= disorder (rows
+1,2,3,6) and rises once watermark < disorder (rows 4,5) -- the 'bounded reordering is
+free up to the bound, not beyond it' proposition, on real arrival content with
+synthetic jitter. The effect is measured on the first 20000 rows, where the
+true cardinality (505 tickers total) is still actively growing -- once it saturates,
+reordering has nothing left to disrupt, which is itself a sanity check on the setup.
+
+Crash-recovery check (real data, 60000 real rows, simulated mid-stream restart):
+
+First, one illustrative trial, to show what 'continuity' looks like concretely:
+  true cardinality right before crash (row 39999)  = 477
+  estimate right before crash                        = 503.21
+  last publicly-released value at moment of crash    = 495.493   (logged only -- NOT reused internally)
+  estimate immediately after simulated crash+recovery = 492.777   (continuity preserved -- NOT reset to 0)
+
+Now the RIGOROUS version: does accuracy actually hold up over 20000 more rows post-crash,
+on average, or was the single illustrative trial above a lucky draw? 40 independent seeds,
+each comparing a crashed-and-recovered sketch against a never-crashed control line built
+from the SAME seed -- a paired design, on purpose, so shared randomness up to the crash
+point cancels out of the comparison. THIS TIME IT IS ANALYZED AS ONE: the previous version
+computed two separate bootstrap intervals and eyeballed whether they overlapped, which
+throws away exactly the statistical power pairing exists to buy -- the correct statistic
+is the bootstrap CI of the PER-SEED DIFFERENCE (crashed[i] - control[i]), not two
+independently-resampled marginals (Bouthillier et al., 'Accounting for Variance in
+Machine Learning Benchmarks,' MLSys 2021, give the exact reason why: for unpaired A, B,
+std(A-B) can be as large as std(A)+std(B); pairing marginalizes out shared variance and
+can only shrink that. Sharma, 'Paired Seed Evaluation: Statistical Reliability for
+Learning-Based Simulators' (arXiv preprint, Dec 2025), formalizes this same shared-seed
+design directly for simulator comparisons; Du, 'When +1% Is Not Enough: A Paired
+Bootstrap Protocol for Evaluating Small Improvements' (arXiv preprint, Nov 2025), adds
+a distribution-free sign test alongside the paired bootstrap CI as a second, weaker-
+assumption check -- both preprints, not yet established peer-reviewed venues, flagged
+honestly as such; the underlying pairing argument itself is peer-reviewed (Bouthillier).
+
+  true cardinality at row 59999 = 482
+  |error|, crashed-and-recovered line (marginal) = 25.4516  [95% CI 19.5709, 31.6372]  (n=40 seeds)
+  |error|, never-crashed control line (marginal)  = 20.6623  [95% CI 16.0917, 25.9111]  (n=40 seeds)
+  PAIRED difference (crashed - control), the CORRECT statistic = 4.7893  [95% CI -3.0529, 13.1314]  (n=40 seeds)
+  sign test: 26 seeds crashed-worse, 14 seeds crashed-better, 0 tied, two-sided exact p = 0.0807
+
+Read the PAIRED DIFFERENCE row, not the two marginal rows above it, as the answer: if its
+95% CI contains 0, recovery is statistically indistinguishable from never having crashed
+(a GOOD outcome, not a null result); if it excludes 0, that is the real, now correctly-
+powered, quantified cost of the one fresh noise draw the recovery spends -- either way,
+this is the number the paired design was built to produce, not the two overlapping
+marginal intervals the previous version of this file stopped at.
+
+Paper comparison: the paper's model has no node restarts at all -- state is simply
+assumed to live uninterrupted for the whole stream. HLC-Tree's recovery discards and
+rebuilds only the NOISE-TRACKING history (the old Fenwick tree and every value it ever
+drew); the sample itself is treated as ordinary durably-persisted data, and the fresh
+tree is seeded from the sketch's own true current count -- never by replaying or
+extending a previously-released noisy number.
